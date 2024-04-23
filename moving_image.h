@@ -1,16 +1,24 @@
 #ifndef MOVING_IMG_H
 #define MOVING_IMG_H
-
+#include <stack>
+#include <functional>
 #include "basics.h"
 
 // Clase que representa una imagen como una colección de 3 matrices siguiendo el
 // esquema de colores RGB
+struct Move {
+    enum class Type { Up, Down, Left, Right, Rotate };
+    Type type;
+    int distance;
+};
 
 class moving_image {
 private:
   unsigned char **red_layer; // Capa de tonalidades rojas
   unsigned char **green_layer; // Capa de tonalidades verdes
   unsigned char **blue_layer; // Capa de tonalidades azules
+  std::stack<Move> moves_history;
+  std::stack<Move> undone_moves;
 
 public:
   // Constructor de la imagen. Se crea una imagen por defecto
@@ -66,7 +74,57 @@ public:
   void draw(const char* nb) {
     _draw(nb);
   }
-
+  void undo() {
+    if (!moves_history.empty()) {
+      Move last_move = moves_history.top();
+      moves_history.pop();
+      undone_moves.push(last_move);
+      switch (last_move.type) {
+            case Move::Type::Up:
+                move_down_undo(last_move.distance);
+                break;
+            case Move::Type::Down:
+                move_up_undo(last_move.distance);
+                break;
+            case Move::Type::Left:
+                move_right_undo(last_move.distance);
+                break;
+            case Move::Type::Right:
+                move_left_undo(last_move.distance);
+                break;
+            case Move::Type::Rotate:
+                rotate_undo();
+                rotate_undo();
+                rotate_undo();
+                break;
+        }
+    }
+  }
+ void redo() {
+     if (!undone_moves.empty()) {
+         Move redo_move = undone_moves.top();
+         undone_moves.pop();
+         //moves_history.push(redo_move); // Añadir el movimiento a redo al stack de moves_history
+         //redo_move.type(redo_move.distance)
+         switch (redo_move.type) {
+            case Move::Type::Up:
+                move_up_undo(redo_move.distance);
+                break;
+            case Move::Type::Down:
+                move_down_undo(redo_move.distance);
+                break;
+            case Move::Type::Left:
+                move_left_undo(redo_move.distance);
+                break;
+            case Move::Type::Right:
+                move_right_undo(redo_move.distance);
+                break;
+            case Move::Type::Rotate:
+                rotate_undo();
+                break;
+        }
+     }
+ }
   // Función que similar desplazar la imagen, de manera circular, d pixeles a la izquierda
   void move_left(int d) {
     unsigned char tmp_layer[H_IMG][W_IMG];
@@ -109,6 +167,11 @@ public:
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
 	    blue_layer[i][j] = tmp_layer[i][j];
+    Move move_left;
+    move_left.type = Move::Type::Left; // El movimiento contrario a move_up es move_down
+    move_left.distance = d;
+    moves_history.push(move_left);
+
   }
 
  // Función que desplaza la imagen d pixeles a la derecha
@@ -153,10 +216,348 @@ void move_right(int d) {
     for(int i = 0; i < H_IMG; i++)
         for(int j = 0; j < W_IMG; j++)
             blue_layer[i][j] = tmp_layer[i][j];
+    Move move_right;
+    move_right.type = Move::Type::Right; // El movimiento contrario a move_up es move_down
+    move_right.distance = d;
+    moves_history.push(move_right);
+}
+// Función que desplaza la imagen d pixeles hacia arriba
+void move_up(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Mover la capa roja
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+    Move move_up;
+    move_up.type = Move::Type::Up; // El movimiento contrario a move_up es move_down
+    move_up.distance = d;
+    moves_history.push(move_up);
+}
+// Función que desplaza la imagen d pixeles hacia abajo
+void move_down(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Mover la capa roja
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+    Move move_down;
+    move_down.type = Move::Type::Down; // El movimiento contrario a move_up es move_down
+    move_down.distance = d;
+    moves_history.push(move_down);
+}
+// Función que rota la imagen 90 grados en sentido contrario a las agujas del reloj
+void rotate() {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Rotar la capa roja
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = red_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Rotar la capa verde
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = green_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Rotar la capa azul
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = blue_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+    Move rotate;
+    rotate.type = Move::Type::Rotate; // El movimiento contrario a move_up es move_down
+    rotate.distance = 0;
+    moves_history.push(rotate);
 }
 
+void move_left_undo(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
 
+    // Mover la capa roja
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG-d; j++)
+	    tmp_layer[i][j] = red_layer[i][j+d];      
+    
+    for(int i=0; i < H_IMG; i++)
+      for(int j=W_IMG-d, k=0; j < W_IMG; j++, k++)
+    	tmp_layer[i][j] = red_layer[i][k];      
 
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG; j++)
+	    red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG-d; j++)
+	    tmp_layer[i][j] = green_layer[i][j+d];      
+    
+    for(int i=0; i < H_IMG; i++)
+      for(int j=W_IMG-d, k=0; j < W_IMG; j++, k++)
+    	tmp_layer[i][j] = green_layer[i][k];      
+
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG; j++)
+	    green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG-d; j++)
+	    tmp_layer[i][j] = blue_layer[i][j+d];      
+    
+    for(int i=0; i < H_IMG; i++)
+      for(int j=W_IMG-d, k=0; j < W_IMG; j++, k++)
+    	tmp_layer[i][j] = blue_layer[i][k];      
+
+    for(int i=0; i < H_IMG; i++)
+      for(int j=0; j < W_IMG; j++)
+	    blue_layer[i][j] = tmp_layer[i][j];
+    // Dentro de la función move_up
+  }
+
+ // Función que desplaza la imagen d pixeles a la derecha
+void move_right_undo(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Mover la capa roja
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = W_IMG - 1; j >= d; j--)
+            tmp_layer[i][j] = red_layer[i][j - d];
+    
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0, k = W_IMG - d; j < d; j++, k++)
+            tmp_layer[i][j] = red_layer[i][k];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = W_IMG - 1; j >= d; j--)
+            tmp_layer[i][j] = green_layer[i][j - d];
+    
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0, k = W_IMG - d; j < d; j++, k++)
+            tmp_layer[i][j] = green_layer[i][k];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = W_IMG - 1; j >= d; j--)
+            tmp_layer[i][j] = blue_layer[i][j - d];
+    
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0, k = W_IMG - d; j < d; j++, k++)
+            tmp_layer[i][j] = blue_layer[i][k];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+
+}
+// Función que desplaza la imagen d pixeles hacia arriba
+void move_up_undo(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Mover la capa roja
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i = 0; i < H_IMG - d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[i + d][j];
+    
+    for(int i = H_IMG - d, k = 0; i < H_IMG; i++, k++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[k][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+
+}
+// Función que desplaza la imagen d pixeles hacia abajo
+void move_down_undo(int d) {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Mover la capa roja
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = red_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa verde
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = green_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Mover la capa azul
+    for(int i = H_IMG - 1; i >= d; i--)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[i - d][j];
+    
+    for(int i = 0; i < d; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[i][j] = blue_layer[H_IMG - d + i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+
+}
+// Función que rota la imagen 90 grados en sentido contrario a las agujas del reloj
+void rotate_undo() {
+    unsigned char tmp_layer[H_IMG][W_IMG];
+
+    // Rotar la capa roja
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = red_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            red_layer[i][j] = tmp_layer[i][j];
+
+    // Rotar la capa verde
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = green_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            green_layer[i][j] = tmp_layer[i][j];
+
+    // Rotar la capa azul
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            tmp_layer[H_IMG - j - 1][i] = blue_layer[i][j];
+
+    for(int i = 0; i < H_IMG; i++)
+        for(int j = 0; j < W_IMG; j++)
+            blue_layer[i][j] = tmp_layer[i][j];
+}
 private:
   // Función privada que guarda la imagen en formato .png
   void _draw(const char* nb) {
