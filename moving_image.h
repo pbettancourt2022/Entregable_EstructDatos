@@ -75,6 +75,58 @@ public:
   void draw(const char* nb) {
     _draw(nb);
   }
+  void repeat() {
+    if(!moves_history.empty()) {
+        Move last_move = moves_history.top();
+        moves_history.pop();
+
+        switch (last_move.type) {
+            case Move::Type::Up:
+                move_up(last_move.distance);
+                break;
+            case Move::Type::Down:
+                move_down(last_move.distance);
+                break;
+            case Move::Type::Left:
+                move_left(last_move.distance);
+                break;
+            case Move::Type::Right:
+                move_right(last_move.distance);
+                break;
+            case Move::Type::Rotate:
+                rotate();
+                break;
+        }
+    }
+  }
+  void repeat_all(){
+    if(!moves_history.empty()){
+        std::stack<Move> temp_stack = moves_history;
+
+        while(!temp_stack.empty()) {
+            Move last_move = temp_stack.top();
+            
+            switch (last_move.type) {
+            case Move::Type::Up:
+                move_up(last_move.distance);
+                break;
+            case Move::Type::Down:
+                move_down(last_move.distance);
+                break;
+            case Move::Type::Left:
+                move_left(last_move.distance);
+                break;
+            case Move::Type::Right:
+                move_right(last_move.distance);
+                break;
+            case Move::Type::Rotate:
+                rotate();
+                break;
+        }
+        }
+
+    }
+  }
   void undo() {
     if (!moves_history.empty()) {
       Move last_move = moves_history.top();
@@ -106,7 +158,7 @@ public:
      if (!undone_moves.empty()) {
          Move redo_move = undone_moves.top();
          undone_moves.pop();
-         opcion= false;
+         opcion = false;
          switch (redo_move.type) {
             case Move::Type::Up:
                 move_up(redo_move.distance);
