@@ -19,6 +19,7 @@ private:
   unsigned char **blue_layer; // Capa de tonalidades azules
   std::stack<Move> moves_history;
   std::stack<Move> undone_moves;
+  std::stack<Move> repeat_history;
 
 public:
     bool opcion=true;
@@ -76,9 +77,8 @@ public:
     _draw(nb);
   }
   void repeat() {
-    if(!moves_history.empty()) {
-        Move last_move = moves_history.top();
-        moves_history.pop();
+    if(!repeat_history.empty()) {
+        Move last_move = repeat_history.top();
 
         switch (last_move.type) {
             case Move::Type::Up:
@@ -100,12 +100,13 @@ public:
     }
   }
   void repeat_all(){
-    if(!moves_history.empty()){
-        std::stack<Move> temp_stack = moves_history;
+    int i=0;
+    if(!repeat_history.empty()){
 
-        while(!temp_stack.empty()) {
-            Move last_move = temp_stack.top();
-            
+       while (!repeat_history.empty()) {
+            Move last_move = repeat_history.top();
+            repeat_history.pop();
+            opcion=false;
             switch (last_move.type) {
             case Move::Type::Up:
                 move_up(last_move.distance);
@@ -123,6 +124,10 @@ public:
                 rotate();
                 break;
         }
+        char filename[50];
+        sprintf(filename, "imagen_%d_all.png", i);
+        i=i++;
+        draw(filename);
         }
 
     }
@@ -220,13 +225,17 @@ public:
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
 	    blue_layer[i][j] = tmp_layer[i][j];
+
     if (opcion){
-    
     Move move_left;
     move_left.type = Move::Type::Left; // El movimiento contrario a move_up es move_down
     move_left.distance = d;
     moves_history.push(move_left);
     }
+    Move move_left;
+    move_left.type = Move::Type::Left; 
+    move_left.distance = d;
+    repeat_history.push(move_left);
     opcion=true;
   }
 
@@ -278,6 +287,10 @@ void move_right(int d) {
     move_right.distance = d;
     moves_history.push(move_right);
     }
+    Move move_right;
+    move_right.type = Move::Type::Right; 
+    move_right.distance = d;
+    repeat_history.push(move_right);
     opcion=true;
 }
 // Función que desplaza la imagen d pixeles hacia arriba
@@ -329,6 +342,10 @@ void move_up(int d) {
     move_up.distance = d;
     moves_history.push(move_up);
     }
+    Move move_up;
+    move_up.type = Move::Type::Up; 
+    move_up.distance = d;
+    repeat_history.push(move_up);
     opcion=true;
 }
 // Función que desplaza la imagen d pixeles hacia abajo
@@ -379,6 +396,10 @@ void move_down(int d) {
     move_down.distance = d;
     moves_history.push(move_down);
     }
+    Move move_down;
+    move_down.type = Move::Type::Down; 
+    move_down.distance = d;
+    repeat_history.push(move_down);
     opcion=true;
 
 }
@@ -418,6 +439,10 @@ void rotate() {
     rotate.distance = 0;
     moves_history.push(rotate);
     }
+    Move rotate;
+    rotate.type = Move::Type::Rotate; 
+    rotate.distance = 0;
+    repeat_history.push(rotate);
     opcion=true;
 }
 
