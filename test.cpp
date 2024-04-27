@@ -23,6 +23,7 @@ int main() {
   sleep(2);
   im.draw("imagen_desplazada_undo.png");
   im.repeat_all();
+
   /* NOTA 1: Si usan el mismo nombre para las imágenes, entonces cada llamada al
   método draw() sobreescribirá a la imagen */
 

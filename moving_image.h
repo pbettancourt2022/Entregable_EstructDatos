@@ -23,6 +23,8 @@ private:
 
 public:
     bool opcion=true;
+    bool opcion2=true;
+
   // Constructor de la imagen. Se crea una imagen por defecto
   moving_image() {
     // Reserva de memoria para las 3 matrices RGB
@@ -100,13 +102,11 @@ public:
     }
   }
   void repeat_all(){
-    int i=0;
     if(!repeat_history.empty()){
-
-       while (!repeat_history.empty()) {
+       for(int i=0;i<repeat_history.size();i++) {
             Move last_move = repeat_history.top();
             repeat_history.pop();
-            opcion=false;
+            opcion2=false;
             switch (last_move.type) {
             case Move::Type::Up:
                 move_up(last_move.distance);
@@ -123,10 +123,9 @@ public:
             case Move::Type::Rotate:
                 rotate();
                 break;
-        }
+            }
         char filename[50];
         sprintf(filename, "imagen_%d_all.png", i);
-        i=i++;
         draw(filename);
         }
 
@@ -232,11 +231,14 @@ public:
     move_left.distance = d;
     moves_history.push(move_left);
     }
-    Move move_left;
-    move_left.type = Move::Type::Left; 
-    move_left.distance = d;
-    repeat_history.push(move_left);
+    if (opcion2){
+        Move move_left;
+        move_left.type = Move::Type::Left; 
+        move_left.distance = d;
+        repeat_history.push(move_left);
+    }
     opcion=true;
+    opcion2=true;
   }
 
  // Función que desplaza la imagen d pixeles a la derecha
@@ -287,11 +289,14 @@ void move_right(int d) {
     move_right.distance = d;
     moves_history.push(move_right);
     }
-    Move move_right;
-    move_right.type = Move::Type::Right; 
-    move_right.distance = d;
-    repeat_history.push(move_right);
+    if (opcion2){
+        Move move_right;
+        move_right.type = Move::Type::Right; 
+        move_right.distance = d;
+        repeat_history.push(move_right);
+    }
     opcion=true;
+    opcion2=true;
 }
 // Función que desplaza la imagen d pixeles hacia arriba
 void move_up(int d) {
@@ -342,11 +347,14 @@ void move_up(int d) {
     move_up.distance = d;
     moves_history.push(move_up);
     }
+    if (opcion2){
     Move move_up;
     move_up.type = Move::Type::Up; 
     move_up.distance = d;
     repeat_history.push(move_up);
+    }
     opcion=true;
+    opcion2=true;
 }
 // Función que desplaza la imagen d pixeles hacia abajo
 void move_down(int d) {
@@ -396,12 +404,14 @@ void move_down(int d) {
     move_down.distance = d;
     moves_history.push(move_down);
     }
+    if (opcion2){
     Move move_down;
     move_down.type = Move::Type::Down; 
     move_down.distance = d;
     repeat_history.push(move_down);
+    }
     opcion=true;
-
+    opcion2=true;
 }
 // Función que rota la imagen 90 grados en sentido contrario a las agujas del reloj
 void rotate() {
@@ -439,11 +449,14 @@ void rotate() {
     rotate.distance = 0;
     moves_history.push(rotate);
     }
+    if (opcion2){
     Move rotate;
     rotate.type = Move::Type::Rotate; 
     rotate.distance = 0;
     repeat_history.push(rotate);
+    }
     opcion=true;
+    opcion2=true;
 }
 
 private:
